@@ -7,6 +7,13 @@ on:
     branches: [main, develop]
   workflow_dispatch:
 
+# Caller must explicitly grant the permissions the reusable workflow requests.
+# Some org/repo defaults set GITHUB_TOKEN to read-only or none.
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
 jobs:
   security:
     # Reusable workflow của sast-action library. Pin theo tag khi v0.2.0 release.
