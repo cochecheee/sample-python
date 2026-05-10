@@ -6,7 +6,7 @@ App nhỏ (~80 LOC) cố ý chứa 5 lỗ hổng phổ biến để Bandit, Semg
 
 ---
 
-## Lỗi cố ý (đừng "fix")
+## Lỗi cố ý (đừng "fix") 
 
 | # | Type | Location | Tool sẽ bắt |
 |---|---|---|---|
