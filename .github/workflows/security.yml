@@ -10,7 +10,7 @@ on:
 jobs:
   security:
     # Reusable workflow của sast-action library. Pin theo tag khi v0.2.0 release.
-    uses: cochecheee/sast-action/.github/workflows/sast-ci.yml@main
+    uses: cochecheee/sast-action/.github/workflows/sast-ci.yml@master
     with:
       language: python
       pipeline_status: passed
