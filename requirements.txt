@@ -1,5 +1,13 @@
 # Vuln #6 — pinned to an old Flask with known CVEs so Trivy/Safety
 # have something to flag. Don't bump this without updating the demo
 # narrative (the point is to be vulnerable).
+#
+# Flask 1.0 requires the matching ecosystem of that era — newer Werkzeug
+# / itsdangerous / Jinja2 break import. Pin all transitive deps to the
+# last version compatible with Flask 1.0.
 Flask==1.0
+Werkzeug==0.16.1
+Jinja2==2.11.3
+itsdangerous==1.1.0
 MarkupSafe==1.1.1
+click==7.1.2

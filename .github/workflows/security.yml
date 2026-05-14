@@ -24,7 +24,7 @@ jobs:
       # V2.2 CD: build Docker image, push to Hub, trigger Render staging.
       # Set false để disable CD nếu chưa setup Docker Hub + Render hook.
       deploy: true
-      image_repo: cochecheee/sample-python
+      image_repo: tienbui482/sample-python
       dockerfile: Dockerfile
       build_context: .
     secrets:
