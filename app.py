@@ -8,7 +8,7 @@ import os
 import sqlite3
 import urllib.request
 
-from flask import Flask, request
+from flask import Flask, jsonify, request
 from markupsafe import Markup
 
 app = Flask(__name__)
@@ -88,8 +88,9 @@ def fetch_url() -> str:
 
 
 @app.route("/health")
-def health() -> dict:
-    return {"status": "ok"}
+def health():
+    # Flask 1.0 does not auto-jsonify dict returns; use jsonify explicitly
+    return jsonify({"status": "ok"})
 
 
 if __name__ == "__main__":
