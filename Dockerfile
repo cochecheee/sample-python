@@ -1,7 +1,12 @@
 # syntax=docker/dockerfile:1.7
 # Container build for the vulnerable sample app. Used by V2.2 CD pipeline
 # to deploy a staging instance that V2.3 ZAP DAST scans against.
-FROM python:3.12-slim
+#
+# Pinned to Python 3.9 because Flask 1.0 imports `collections.MutableMapping`
+# which was removed in Python 3.10+ (moved to collections.abc). Using an
+# end-of-life Python image is intentional — also amplifies the Trivy/Safety
+# finding surface that this sample is meant to demonstrate.
+FROM python:3.9-slim
 
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
