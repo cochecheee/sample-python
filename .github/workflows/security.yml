@@ -27,6 +27,10 @@ jobs:
       image_repo: tienbui482/sample-python
       dockerfile: Dockerfile
       build_context: .
+      # V2.3 — OWASP ZAP baseline scan against staging after CD redeploy
+      dast: true
+      staging_url: https://sample-python-latest.onrender.com
+      dast_scan_type: baseline
     secrets:
       dashboard_url:      ${{ secrets.MCP_GATEWAY_URL }}
       dashboard_token:    ${{ secrets.MCP_WEBHOOK_TOKEN }}
