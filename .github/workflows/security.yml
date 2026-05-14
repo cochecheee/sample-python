@@ -13,6 +13,10 @@ permissions:
   contents: read
   security-events: write
   actions: read
+  # V2.3 — OWASP ZAP action wants issues:write to optionally file alerts
+  # (we set allow_issue_writing=false but the action still requires the
+  # permission to be present, otherwise the job fails startup validation).
+  issues: write
 
 jobs:
   security:
