@@ -21,6 +21,15 @@ jobs:
     with:
       language: python
       pipeline_status: passed
+      # V2.2 CD: build Docker image, push to Hub, trigger Render staging.
+      # Set false để disable CD nếu chưa setup Docker Hub + Render hook.
+      deploy: true
+      image_repo: cochecheee/sample-python
+      dockerfile: Dockerfile
+      build_context: .
     secrets:
-      dashboard_url:   ${{ secrets.MCP_GATEWAY_URL }}
-      dashboard_token: ${{ secrets.MCP_WEBHOOK_TOKEN }}
+      dashboard_url:      ${{ secrets.MCP_GATEWAY_URL }}
+      dashboard_token:    ${{ secrets.MCP_WEBHOOK_TOKEN }}
+      docker_username:    ${{ secrets.DOCKER_USERNAME }}
+      docker_password:    ${{ secrets.DOCKER_PASSWORD }}
+      render_deploy_hook: ${{ secrets.RENDER_DEPLOY_HOOK }}
