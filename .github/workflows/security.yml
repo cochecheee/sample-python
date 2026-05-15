@@ -41,7 +41,7 @@ jobs:
       # V2.7 — Security Gate. Sample-python có vuln cố ý → expect FAIL.
       gate_enabled: true
       gate_fail_on_critical: 1
-      gate_fail_on_high: 5
+      gate_fail_on_high: 3
     secrets:
       dashboard_url:      ${{ secrets.MCP_GATEWAY_URL }}
       dashboard_token:    ${{ secrets.MCP_WEBHOOK_TOKEN }}
