@@ -2,7 +2,7 @@ name: Security
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, verify-work-test]
   pull_request:
     branches: [main, develop]
   workflow_dispatch:
@@ -21,20 +21,27 @@ permissions:
 jobs:
   security:
     # Reusable workflow của sast-action library. Pin theo tag khi v0.2.0 release.
-    uses: cochecheee/sast-action/.github/workflows/sast-ci.yml@master
+    # V2.7 verify — switch from @master to @verify-work to test Security Gate + CodeQL.
+    # Revert sau khi smoke pass.
+    uses: cochecheee/sast-action/.github/workflows/sast-ci.yml@verify-work
     with:
       language: python
       pipeline_status: passed
       # V2.2 CD: build Docker image, push to Hub, trigger Render staging.
-      # Set false để disable CD nếu chưa setup Docker Hub + Render hook.
-      deploy: true
+      # Disabled trong test branch để giảm thời gian + tránh deploy staging
+      # bằng build chưa verify gate.
+      deploy: false
       image_repo: tienbui482/sample-python
       dockerfile: Dockerfile
       build_context: .
-      # V2.3 — OWASP ZAP baseline scan against staging after CD redeploy
-      dast: true
+      # V2.3 — DAST tắt cùng để smoke ngắn (~5 phút SAST + gate là đủ)
+      dast: false
       staging_url: https://sample-python-latest.onrender.com
       dast_scan_type: baseline
+      # V2.7 — Security Gate. Sample-python có vuln cố ý → expect FAIL.
+      gate_enabled: true
+      gate_fail_on_critical: 1
+      gate_fail_on_high: 5
     secrets:
       dashboard_url:      ${{ secrets.MCP_GATEWAY_URL }}
       dashboard_token:    ${{ secrets.MCP_WEBHOOK_TOKEN }}
