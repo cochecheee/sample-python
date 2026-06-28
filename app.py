@@ -6,9 +6,10 @@ See README.md for the list of seeded vulnerabilities.
 """
 import os
 import sqlite3
+import tempfile
 import urllib.request
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, render_template, request
 from markupsafe import Markup
 
 app = Flask(__name__)
@@ -17,7 +18,7 @@ app = Flask(__name__)
 SECRET_KEY = "super-secret-do-not-rotate-2024"
 app.config["SECRET_KEY"] = SECRET_KEY
 
-DB_PATH = "/tmp/sample.db"
+DB_PATH = os.path.join(tempfile.gettempdir(), "sample.db")
 
 
 def init_db() -> None:
@@ -40,15 +41,9 @@ def init_db() -> None:
 
 @app.route("/")
 def index() -> str:
-    return (
-        "<h1>Vulnerable sample</h1>"
-        "<ul>"
-        "<li><a href='/user?id=1'>/user?id=1</a> (SQLi)</li>"
-        "<li><a href='/greet?name=Tien'>/greet?name=Tien</a> (XSS)</li>"
-        "<li><a href='/ping?host=8.8.8.8'>/ping?host=8.8.8.8</a> (cmd injection)</li>"
-        "<li><a href='/fetch?url=https://example.com'>/fetch?url=...</a> (SSRF)</li>"
-        "</ul>"
-    )
+    # Glassmorphism "giọt nước" demo dashboard (templates/index.html).
+    # Purely presentational — the vulnerable endpoints below are unchanged.
+    return render_template("index.html")
 
 
 @app.route("/user")
@@ -57,8 +52,10 @@ def user_lookup() -> str:
     user_id = request.args.get("id", "1")
     con = sqlite3.connect(DB_PATH)
     # nosec ignored on purpose — Semgrep + Bandit should still flag this.
-    query = f"SELECT id, name, email FROM users WHERE id = {user_id}"
-    rows = con.execute(query).fetchall()
+    # query = f"SELECT id, name, email FROM users WHERE id = {user_id}"
+    # rows = con.execute(query).fetchall()
+    query = "SELECT id, name, email FROM users WHERE id = ?"
+    rows = con.execute(query, (user_id,)).fetchall()
     con.close()
     return f"<pre>{rows}</pre>"
 
