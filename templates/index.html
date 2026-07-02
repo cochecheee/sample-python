@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vulnerable Sample · SAST Demo</title>
+<style>
+  :root {
+    --aqua: #38f9d7;
+    --teal: #1dd3b0;
+    --cyan: #43e0ff;
+    --glass: rgba(255, 255, 255, 0.10);
+    --glass-strong: rgba(255, 255, 255, 0.18);
+    --stroke: rgba(255, 255, 255, 0.35);
+    --text: #eaffff;
+    --muted: rgba(234, 255, 255, 0.62);
+    --danger: #ff6b9d;
+    --ok: #5fffb0;
+    --warn: #ffd166;
+    --shadow: 0 8px 32px rgba(0, 30, 60, 0.37);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", system-ui, sans-serif;
+    color: var(--text); min-height: 100vh; overflow-x: hidden;
+    background: linear-gradient(135deg, #042f49 0%, #064663 35%, #0a6e6e 70%, #0e8a7a 100%);
+    position: relative;
+  }
+
+  /* ---------- animated liquid background ---------- */
+  .bg-blobs { position: fixed; inset: 0; z-index: 0; filter: url(#goo) blur(8px); overflow: hidden; pointer-events: none; }
+  .blob { position: absolute; border-radius: 50%; opacity: 0.55; mix-blend-mode: screen; }
+  .blob.b1 { width: 460px; height: 460px; background: radial-gradient(circle at 30% 30%, var(--cyan), transparent 70%); top: -120px; left: -80px; animation: drift1 18s ease-in-out infinite; }
+  .blob.b2 { width: 520px; height: 520px; background: radial-gradient(circle at 30% 30%, var(--aqua), transparent 70%); bottom: -160px; right: -100px; animation: drift2 22s ease-in-out infinite; }
+  .blob.b3 { width: 360px; height: 360px; background: radial-gradient(circle at 30% 30%, var(--teal), transparent 70%); top: 40%; left: 55%; animation: drift3 26s ease-in-out infinite; }
+  @keyframes drift1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(120px, 80px) scale(1.18); } }
+  @keyframes drift2 { 0%,100% { transform: translate(0,0) scale(1.1); } 50% { transform: translate(-100px, -90px) scale(0.92); } }
+  @keyframes drift3 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-90px, 70px) scale(1.22); } }
+
+  .wrap { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; padding: 64px 24px 80px; }
+
+  /* ---------- hero ---------- */
+  .hero { text-align: center; margin-bottom: 56px; }
+  .droplet {
+    width: 76px; height: 76px; margin: 0 auto 22px; position: relative;
+    background: linear-gradient(160deg, rgba(255,255,255,0.9), var(--aqua) 60%, var(--teal));
+    border-radius: 50% 50% 50% 0; transform: rotate(45deg);
+    box-shadow: 0 10px 40px rgba(56, 249, 215, 0.5), inset -6px -6px 14px rgba(0,0,0,0.15), inset 6px 6px 14px rgba(255,255,255,0.6);
+    animation: bob 4s ease-in-out infinite;
+  }
+  .droplet::after { content: ""; position: absolute; top: 30%; left: 26%; width: 18px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.75); transform: rotate(-10deg); filter: blur(1px); }
+  @keyframes bob { 0%,100% { transform: rotate(45deg) translateY(0); } 50% { transform: rotate(45deg) translateY(-10px); } }
+
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.1rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.05;
+    background: linear-gradient(120deg, #ffffff, var(--aqua), var(--cyan));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: 0 2px 30px rgba(56, 249, 215, 0.25);
+  }
+  .hero p { margin-top: 14px; color: var(--muted); font-size: 1.05rem; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 20px; padding: 8px 18px; border-radius: 999px;
+    background: rgba(255, 107, 157, 0.14); border: 1px solid rgba(255, 107, 157, 0.4);
+    color: #ffd0e0; font-size: 0.85rem; font-weight: 600; backdrop-filter: blur(12px);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 12px var(--danger); animation: pulse 1.8s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* ---------- glass cards ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 22px; }
+  .card {
+    background: var(--glass); border: 1px solid var(--stroke); border-radius: 24px; padding: 26px;
+    backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%);
+    box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.25);
+    transition: transform 0.35s cubic-bezier(.2,.8,.2,1), box-shadow 0.35s; position: relative; overflow: hidden;
+  }
+  .card::before { content: ""; position: absolute; top: -50%; left: -50%; width: 200%; height: 60%; background: linear-gradient(transparent, rgba(255,255,255,0.12), transparent); transform: rotate(8deg); pointer-events: none; }
+  .card:hover { transform: translateY(-6px); box-shadow: 0 18px 50px rgba(0, 40, 70, 0.5), inset 0 1px 0 rgba(255,255,255,0.35); }
+
+  .card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .card-num {
+    flex: 0 0 auto; width: 34px; height: 34px; border-radius: 12px; display: grid; place-items: center;
+    font-weight: 800; font-size: 0.95rem; background: linear-gradient(160deg, var(--aqua), var(--teal)); color: #04303a;
+    box-shadow: 0 4px 14px rgba(56,249,215,0.4);
+  }
+  .card h3 { font-size: 1.12rem; font-weight: 700; }
+  .tag { display: inline-block; margin-top: 4px; font-size: 0.72rem; font-weight: 600; color: #ffc4d8; background: rgba(255,107,157,0.12); border: 1px solid rgba(255,107,157,0.3); padding: 2px 9px; border-radius: 999px; }
+  .card p.desc { color: var(--muted); font-size: 0.88rem; line-height: 1.5; margin: 12px 0 14px; }
+  .card p.desc code { background: rgba(0,0,0,0.3); padding: 1px 6px; border-radius: 6px; font-size: 0.82em; color: #ffd9e6; }
+
+  /* ---------- payload chips ---------- */
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+  .chip {
+    font-size: 0.72rem; font-weight: 600; padding: 5px 11px; border-radius: 999px; cursor: pointer;
+    background: rgba(255,255,255,0.08); border: 1px solid var(--stroke); color: var(--muted);
+    font-family: "SF Mono", Consolas, monospace; transition: all 0.18s; white-space: nowrap;
+  }
+  .chip:hover { background: rgba(56,249,215,0.18); border-color: var(--aqua); color: var(--text); transform: translateY(-1px); }
+
+  /* ---------- input ---------- */
+  .field { display: flex; gap: 10px; }
+  .field input {
+    flex: 1; min-width: 0; padding: 11px 14px; border-radius: 14px; background: rgba(0,0,0,0.22);
+    border: 1px solid var(--stroke); color: var(--text); font-size: 0.9rem; outline: none; transition: border-color 0.2s, background 0.2s;
+    font-family: "SF Mono", Consolas, monospace;
+  }
+  .field input::placeholder { color: rgba(234,255,255,0.4); }
+  .field input:focus { border-color: var(--aqua); background: rgba(0,0,0,0.3); }
+  .btn {
+    flex: 0 0 auto; padding: 11px 20px; border: none; border-radius: 14px; cursor: pointer; font-weight: 700; font-size: 0.88rem;
+    color: #04303a; background: linear-gradient(135deg, var(--aqua), var(--cyan)); box-shadow: 0 6px 18px rgba(56,249,215,0.35);
+    transition: transform 0.15s, box-shadow 0.2s; display: inline-flex; align-items: center; gap: 7px;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(56,249,215,0.5); }
+  .btn:active { transform: translateY(0) scale(0.97); }
+  .btn .spin { width: 13px; height: 13px; border: 2px solid rgba(4,48,58,0.3); border-top-color: #04303a; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+  .btn.loading .spin { display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- result panel ---------- */
+  .res { margin-top: 16px; display: none; animation: slideIn 0.35s ease; }
+  .res.open { display: block; }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .res-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .pill { font-size: 0.72rem; font-weight: 700; padding: 4px 11px; border-radius: 999px; display: inline-flex; align-items: center; gap: 5px; }
+  .pill.ok   { background: rgba(95,255,176,0.16); border: 1px solid rgba(95,255,176,0.45); color: var(--ok); }
+  .pill.warn { background: rgba(255,209,102,0.16); border: 1px solid rgba(255,209,102,0.45); color: var(--warn); }
+  .pill.bad  { background: rgba(255,107,157,0.16); border: 1px solid rgba(255,107,157,0.5); color: var(--danger); }
+  .res-meta { font-size: 0.74rem; color: var(--muted); font-family: "SF Mono", Consolas, monospace; }
+
+  .verdict { font-size: 0.82rem; line-height: 1.5; padding: 10px 13px; border-radius: 12px; margin-bottom: 12px; display: flex; gap: 9px; align-items: flex-start; }
+  .verdict.bad  { background: rgba(255,107,157,0.10); border: 1px solid rgba(255,107,157,0.3); color: #ffd0e0; }
+  .verdict.ok   { background: rgba(95,255,176,0.10); border: 1px solid rgba(95,255,176,0.3); color: #d6ffe9; }
+  .verdict .vi { font-size: 1rem; line-height: 1.2; }
+
+  /* SQLi table */
+  .tbl { width: 100%; border-collapse: collapse; font-size: 0.82rem; border-radius: 12px; overflow: hidden; }
+  .tbl th { text-align: left; padding: 9px 12px; background: rgba(56,249,215,0.14); color: var(--aqua); font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .tbl td { padding: 9px 12px; border-top: 1px solid rgba(255,255,255,0.08); font-family: "SF Mono", Consolas, monospace; }
+  .tbl tr:nth-child(even) td { background: rgba(255,255,255,0.03); }
+
+  /* XSS preview */
+  .tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+  .tab { font-size: 0.74rem; font-weight: 600; padding: 6px 13px; border-radius: 10px; cursor: pointer; background: rgba(255,255,255,0.06); border: 1px solid var(--stroke); color: var(--muted); }
+  .tab.active { background: rgba(56,249,215,0.18); border-color: var(--aqua); color: var(--text); }
+  .frame { width: 100%; min-height: 80px; border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; background: #fff; }
+  .tab-pane { display: none; } .tab-pane.active { display: block; }
+
+  /* terminal */
+  .term { background: #03161c; border: 1px solid rgba(95,255,176,0.25); border-radius: 12px; padding: 14px 16px; font-family: "SF Mono", "Cascadia Code", Consolas, monospace; font-size: 0.8rem; line-height: 1.6; }
+  .term .ps { color: var(--ok); } .term .cmd { color: #d6ffe9; } .term .out { color: var(--muted); } .term .rc-ok { color: var(--ok); } .term .rc-bad { color: var(--warn); }
+
+  /* code/raw */
+  pre.raw { background: rgba(0,0,0,0.38); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 12px 14px; font-size: 0.78rem; line-height: 1.5; color: #c8fff0; white-space: pre-wrap; word-break: break-word; font-family: "SF Mono", Consolas, monospace; max-height: 240px; overflow: auto; }
+
+  /* SSRF */
+  .kv { font-size: 0.8rem; margin-bottom: 10px; }
+  .kv div { display: flex; gap: 8px; padding: 3px 0; }
+  .kv .k { color: var(--muted); min-width: 92px; } .kv .v { color: var(--text); font-family: "SF Mono", Consolas, monospace; word-break: break-all; }
+
+  .footer { margin-top: 56px; text-align: center; color: var(--muted); font-size: 0.85rem; }
+  .health { display: inline-flex; align-items: center; gap: 9px; margin-bottom: 14px; padding: 8px 16px; border-radius: 999px; background: var(--glass); border: 1px solid var(--stroke); backdrop-filter: blur(12px); cursor: pointer; transition: background 0.2s; }
+  .health:hover { background: var(--glass-strong); }
+  .health .hdot { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+  .footer a { color: var(--aqua); text-decoration: none; } .footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute"><defs>
+    <filter id="goo">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur" />
+      <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10" result="goo" />
+      <feBlend in="SourceGraphic" in2="goo" />
+    </filter>
+  </defs></svg>
+
+  <div class="bg-blobs"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span></div>
+
+  <div class="wrap">
+    <header class="hero">
+      <div class="droplet"></div>
+      <h1>Vulnerable Sample</h1>
+      <p>Playground demo cho <strong>SAST</strong> · Bandit · Semgrep · Trivy</p>
+      <div class="badge"><span class="dot"></span> Cố ý chứa lỗ hổng — đừng deploy public</div>
+    </header>
+
+    <main class="grid">
+
+      <!-- 1. SQLi -->
+      <article class="card">
+        <div class="card-head"><span class="card-num">1</span><div><h3>SQL Injection</h3><span class="tag">/user · Bandit B608</span></div></div>
+        <p class="desc">Query ghép f-string trực tiếp. Payload <code>OR 1=1</code> ép trả về toàn bộ users.</p>
+        <div class="chips">
+          <span class="chip" onclick="setRun('in-user','1', testSqli)">1</span>
+          <span class="chip" onclick="setRun('in-user','1 OR 1=1', testSqli)">1 OR 1=1</span>
+          <span class="chip" onclick="setRun('in-user','0 UNION SELECT 1,sqlite_version(),3', testSqli)">UNION sqlite_version()</span>
+        </div>
+        <div class="field"><input id="in-user" value="1 OR 1=1" /><button class="btn" id="btn-user" onclick="testSqli()"><span class="spin"></span>Test</button></div>
+        <div class="res" id="res-user"></div>
+      </article>
+
+      <!-- 2. XSS -->
+      <article class="card">
+        <div class="card-head"><span class="card-num">2</span><div><h3>Reflected XSS</h3><span class="tag">/greet · Semgrep</span></div></div>
+        <p class="desc">Markup() bỏ autoescape → HTML/JS phản hồi nguyên vẹn rồi <strong>chạy thật</strong> trong khung sandbox.</p>
+        <div class="chips">
+          <span class="chip" onclick="setRun('in-greet','Tien', testXss)">Tien</span>
+          <span class="chip" onclick="setRun('in-greet','&lt;img src=x onerror=alert(1)&gt;', testXss)">&lt;img onerror&gt;</span>
+          <span class="chip" onclick="setRun('in-greet','&lt;b style=color:red&gt;HACKED&lt;/b&gt;', testXss)">&lt;b&gt;HACKED&lt;/b&gt;</span>
+        </div>
+        <div class="field"><input id="in-greet" value="<img src=x onerror=alert('XSS')>" /><button class="btn" id="btn-greet" onclick="testXss()"><span class="spin"></span>Test</button></div>
+        <div class="res" id="res-greet"></div>
+      </article>
+
+      <!-- 3. Cmd injection -->
+      <article class="card">
+        <div class="card-head"><span class="card-num">3</span><div><h3>Command Injection</h3><span class="tag">/ping · Bandit B605</span></div></div>
+        <p class="desc">os.system ghép input → ký tự <code>;</code> <code>|</code> <code>&amp;&amp;</code> nối lệnh tùy ý vào shell.</p>
+        <div class="chips">
+          <span class="chip" onclick="setRun('in-ping','127.0.0.1', testPing)">127.0.0.1</span>
+          <span class="chip" onclick="setRun('in-ping','127.0.0.1; whoami', testPing)">; whoami</span>
+          <span class="chip" onclick="setRun('in-ping','127.0.0.1 &amp;&amp; id', testPing)">&amp;&amp; id</span>
+        </div>
+        <div class="field"><input id="in-ping" value="127.0.0.1; whoami" /><button class="btn" id="btn-ping" onclick="testPing()"><span class="spin"></span>Test</button></div>
+        <div class="res" id="res-ping"></div>
+      </article>
+
+      <!-- 4. SSRF -->
+      <article class="card">
+        <div class="card-head"><span class="card-num">4</span><div><h3>SSRF</h3><span class="tag">/fetch · Bandit B310</span></div></div>
+        <p class="desc">urlopen fetch URL tùy ý, không allowlist → đọc được tài nguyên nội bộ / cloud metadata.</p>
+        <div class="chips">
+          <span class="chip" onclick="setRun('in-fetch','https://example.com', testSsrf)">example.com</span>
+          <span class="chip" onclick="setRun('in-fetch','http://169.254.169.254/latest/meta-data/', testSsrf)">cloud metadata</span>
+          <span class="chip" onclick="setRun('in-fetch','http://127.0.0.1:5000/health', testSsrf)">localhost:5000</span>
+        </div>
+        <div class="field"><input id="in-fetch" value="http://127.0.0.1:5000/health" /><button class="btn" id="btn-fetch" onclick="testSsrf()"><span class="spin"></span>Test</button></div>
+        <div class="res" id="res-fetch"></div>
+      </article>
+
+    </main>
+
+    <footer class="footer">
+      <div class="health" onclick="checkHealth()"><span class="hdot" id="hdot"></span><span id="health-txt">Kiểm tra /health</span></div>
+      <p>sample-python · SAST action demo · <a href="https://github.com/cochecheee/sast-action" target="_blank" rel="noopener">cochecheee/sast-action</a></p>
+    </footer>
+  </div>
+
+<script>
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const stripPre = h => h.replace(/<\/?pre>/g, '').trim();
+
+  function setRun(inId, val, fn) { document.getElementById(inId).value = val; fn(); }
+
+  async function call(endpoint, param, val, btnId) {
+    const btn = document.getElementById(btnId);
+    btn.classList.add('loading');
+    const t0 = performance.now();
+    try {
+      const res = await fetch('/' + endpoint + '?' + param + '=' + encodeURIComponent(val));
+      const text = await res.text();
+      const ms = Math.round(performance.now() - t0);
+      return { status: res.status, statusText: res.statusText, text, ms };
+    } finally { btn.classList.remove('loading'); }
+  }
+
+  function headHtml(r, pillClass, pillText) {
+    return `<div class="res-head">
+      <span class="pill ${pillClass}">${pillText}</span>
+      <span class="res-meta">HTTP ${r.status} · ${r.ms}ms</span></div>`;
+  }
+
+  // ---- 1. SQLi ----
+  async function testSqli() {
+    const val = document.getElementById('in-user').value;
+    const out = document.getElementById('res-user');
+    const r = await call('user', 'id', val, 'btn-user');
+    let html;
+    if (r.status !== 200) {
+      html = headHtml(r, 'bad', '💥 SQL ERROR')
+        + `<div class="verdict bad"><span class="vi">⚠️</span><div>Query lỗi cú pháp (HTTP ${r.status}) — payload đã <strong>phá vỡ câu SQL</strong>. Đây chính là bằng chứng injection.</div></div>`;
+    } else {
+      const rows = [...stripPre(r.text).matchAll(/\((\d+),\s*'([^']*)',\s*'([^']*)'\)/g)];
+      const inj = /union|or\s|--|'/i.test(val) && rows.length > 1;
+      html = headHtml(r, inj ? 'bad' : 'ok', inj ? '🩸 INJECTION OK' : '✓ OK');
+      if (inj) html += `<div class="verdict bad"><span class="vi">🩸</span><div>Payload trả về <strong>${rows.length} dòng</strong> — vượt quá 1 record hợp lệ. Toàn bộ bảng <code>users</code> bị lộ.</div></div>`;
+      if (rows.length) {
+        html += '<table class="tbl"><tr><th>id</th><th>name</th><th>email</th></tr>'
+          + rows.map(m => `<tr><td>${esc(m[1])}</td><td>${esc(m[2])}</td><td>${esc(m[3])}</td></tr>`).join('') + '</table>';
+      } else {
+        html += `<pre class="raw">${esc(stripPre(r.text))}</pre>`;
+      }
+    }
+    out.innerHTML = html; out.classList.add('open');
+  }
+
+  // ---- 2. XSS ----
+  async function testXss() {
+    const val = document.getElementById('in-greet').value;
+    const out = document.getElementById('res-greet');
+    const r = await call('greet', 'name', val, 'btn-greet');
+    const reflected = val.includes('<') && r.text.includes(val);
+    const id = 'xf' + Math.floor(performance.now());
+    let html = headHtml(r, reflected ? 'bad' : 'ok', reflected ? '🩸 XSS FIRED' : '✓ OK');
+    if (reflected) html += `<div class="verdict bad"><span class="vi">🩸</span><div>HTML người dùng được phản hồi <strong>không escape</strong> → script thực thi trong khung dưới (sandbox cô lập).</div></div>`;
+    html += `<div class="tabs">
+        <span class="tab active" onclick="switchTab(this,'${id}',0)">🖥 Rendered</span>
+        <span class="tab" onclick="switchTab(this,'${id}',1)">📄 Raw response</span></div>
+      <div class="tab-pane active" id="${id}-0"><iframe class="frame" sandbox="allow-scripts" srcdoc="${esc(r.text)}"></iframe></div>
+      <div class="tab-pane" id="${id}-1"><pre class="raw">${esc(r.text)}</pre></div>`;
+    out.innerHTML = html; out.classList.add('open');
+  }
+
+  function switchTab(el, id, i) {
+    el.parentElement.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    for (let k = 0; k < 2; k++) document.getElementById(id + '-' + k).classList.toggle('active', k === i);
+  }
+
+  // ---- 3. Command injection ----
+  async function testPing() {
+    const val = document.getElementById('in-ping').value;
+    const out = document.getElementById('res-ping');
+    const r = await call('ping', 'host', val, 'btn-ping');
+    const rc = (stripPre(r.text).match(/rc=(-?\d+)/) || [])[1];
+    const chained = /[;|&`$()]|&&/.test(val);
+    let html = headHtml(r, chained ? 'bad' : 'ok', chained ? '🩸 CMD CHAINED' : '✓ OK');
+    if (chained) html += `<div class="verdict bad"><span class="vi">🩸</span><div>Input chứa ký tự shell → lệnh được nối: hệ thống chạy cả phần sau <code>;</code>/<code>&amp;&amp;</code>, không chỉ ping.</div></div>`;
+    html += `<div class="term">
+        <div><span class="ps">$</span> <span class="cmd">ping -c 1 ${esc(val)}</span></div>
+        <div class="out">→ os.system() chuyển nguyên chuỗi vào /bin/sh</div>
+        <div>exit code: <span class="${rc === '0' ? 'rc-ok' : 'rc-bad'}">${esc(rc ?? '?')}</span></div>
+      </div>`;
+    out.innerHTML = html; out.classList.add('open');
+  }
+
+  // ---- 4. SSRF ----
+  async function testSsrf() {
+    const val = document.getElementById('in-fetch').value;
+    const out = document.getElementById('res-fetch');
+    let host = ''; try { host = new URL(val).hostname; } catch (e) {}
+    const internal = /^(127\.|10\.|192\.168\.|169\.254\.|0\.0\.0\.0|localhost$)/.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host);
+    const r = await call('fetch', 'url', val, 'btn-fetch');
+    const body = stripPre(r.text);
+    let html = headHtml(r, internal && r.status === 200 ? 'bad' : (r.status === 200 ? 'warn' : 'ok'),
+                         internal && r.status === 200 ? '🩸 INTERNAL HIT' : (r.status === 200 ? '⚠ FETCHED' : '✓ blocked'));
+    if (internal && r.status === 200) html += `<div class="verdict bad"><span class="vi">🩸</span><div>Server fetch được <strong>địa chỉ nội bộ</strong> (<code>${esc(host)}</code>) — không có allowlist. Kẻ tấn công đọc được dịch vụ sau firewall / cloud metadata.</div></div>`;
+    html += `<div class="kv">
+        <div><span class="k">Target</span><span class="v">${esc(val)}</span></div>
+        <div><span class="k">Host</span><span class="v">${esc(host || '—')}</span></div>
+        <div><span class="k">Bytes</span><span class="v">${body.length}</span></div></div>
+      <pre class="raw">${esc(body.slice(0, 1200)) || '(empty)'}</pre>`;
+    out.innerHTML = html; out.classList.add('open');
+  }
+
+  // ---- health ----
+  async function checkHealth() {
+    const dot = document.getElementById('hdot'), txt = document.getElementById('health-txt');
+    txt.textContent = 'Đang kiểm tra...';
+    try { const res = await fetch('/health'); const d = await res.json(); dot.style.background = '#5fffb0'; dot.style.boxShadow = '0 0 10px #5fffb0'; txt.textContent = 'Health: ' + d.status; }
+    catch (e) { dot.style.background = '#ff6b9d'; dot.style.boxShadow = '0 0 10px #ff6b9d'; txt.textContent = 'Health: down'; }
+  }
+  checkHealth();
+</script>
+</body>
+</html>
